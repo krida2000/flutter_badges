@@ -12,6 +12,7 @@ class Badge extends StatefulWidget {
     this.badgeStyle = const BadgeStyle(),
     this.badgeAnimation = const BadgeAnimation.slide(),
     this.position,
+    this.behind = false,
     this.showBadge = true,
     this.ignorePointer = false,
     this.stackFit = StackFit.loose,
@@ -30,6 +31,9 @@ class Badge extends StatefulWidget {
   /// Allows to set custom position of badge according to [child].
   /// If [child] is null, it doesn't make sense to use it.
   final BadgePosition? position;
+
+  /// Allows to set badge behind the [child].
+  final bool behind;
 
   /// Content inside badge.
   final Widget? badgeContent;
@@ -104,10 +108,23 @@ class BadgeState extends State<Badge> with TickerProviderStateMixin {
           ? IgnorePointer(child: _getBadge())
           : GestureDetector(onTap: widget.onTap, child: _getBadge());
     } else {
+      BadgePositioned badge = BadgePositioned(
+        /// When the onTap is specified the additional padding is added
+        /// Thats why we need to recalculate the position
+        position: widget.onTap == null
+            ? widget.position
+            : CalculationUtils.calculatePosition(widget.position),
+        child: widget.ignorePointer
+            ? IgnorePointer(child: _getBadge())
+            : GestureDetector(onTap: widget.onTap, child: _getBadge()),
+      );
+
       return Stack(
         fit: widget.stackFit,
         clipBehavior: Clip.none,
         children: [
+          if (widget.behind) badge,
+
           /// When the onTap is specified, we need to add some padding
           /// to make the full badge tappable.
           widget.onTap == null
@@ -116,16 +133,7 @@ class BadgeState extends State<Badge> with TickerProviderStateMixin {
                   padding: CalculationUtils.calculatePadding(widget.position),
                   child: widget.child!,
                 ),
-          BadgePositioned(
-            /// When the onTap is specified the additional padding is added
-            /// Thats why we need to recalculate the position
-            position: widget.onTap == null
-                ? widget.position
-                : CalculationUtils.calculatePosition(widget.position),
-            child: widget.ignorePointer
-                ? IgnorePointer(child: _getBadge())
-                : GestureDetector(onTap: widget.onTap, child: _getBadge()),
-          ),
+          if (!widget.behind) badge,
         ],
       );
     }
